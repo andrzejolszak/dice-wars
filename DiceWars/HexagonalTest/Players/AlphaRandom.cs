@@ -28,9 +28,9 @@ namespace HexagonalTest.Players
 
                 foreach ((Hex other, RelativeDirection direction) in boardState.GetNeighborsOfDifferentColor(this._player.Color, own))
                 {
-                    if (this._random.NextDouble() > 0.5 && boardState.CanAttack(own, other, out _))
+                    if ((this._random.NextDouble() > 0.5 || own.Dices == 8) && boardState.CanAttack(own, other, out _))
                     {
-                        bool won = boardState.PerformAttack(own, other);
+                        bool won = boardState.PerformAttack(own, other).victory;
                         if (won)
                         {
                             // Restart the logic to also process the freshly conquered fields

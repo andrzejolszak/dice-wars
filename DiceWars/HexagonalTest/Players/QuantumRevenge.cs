@@ -31,7 +31,7 @@ namespace HexagonalTest.Players
                 {
                     if (own.Dices >= other.Dices && boardState.CanAttack(own, other, out _))
                     {
-                        bool won = boardState.PerformAttack(own, other);
+                        bool won = boardState.PerformAttack(own, other).victory;
                         if (won)
                         {
                             // Restart the logic to also process the freshly conquered fields

@@ -17,7 +17,7 @@ namespace HexagonalTest.PlayerAPI
 
         List<((Color playerColor, int hexX, int hexY, int diceCount) attacker, (Color playerColor, int hexX, int hexY, int diceCount) defender, bool attackerWon)> AttackHistory { get; }
 
-        List<Hex> GetPatch(Hex hex);
+        HashSet<Hex> GetPatch(Hex hex);
 
         int FindLargesPatchForPlayer(Player player);
 
@@ -29,7 +29,7 @@ namespace HexagonalTest.PlayerAPI
 
         bool HasWon(Player player);
 
-        bool PerformAttack(Hex attacker, Hex defender);
+        (bool victory, int attackerEyes, int defenderEyes) PerformAttack(Hex attacker, Hex defender);
 
         bool CanAttack(Hex attacker, Hex defender, out string reason);
 

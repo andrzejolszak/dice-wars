@@ -12,7 +12,7 @@ namespace Hexagonal
     /// </summary>
     public class Board : IBoardState
     {
-        private static readonly int MAX_DICE = 9;
+        private static readonly int MAX_DICE = 8;
         private static readonly Random RANDOM = new Random();
         private static readonly RelativeDirection[] _allDirections = new[] { RelativeDirection.N, RelativeDirection.NE, RelativeDirection.SE, RelativeDirection.S, RelativeDirection.SW, RelativeDirection.NW };
         private Hexagonal.Hex[,] hexes;
@@ -37,8 +37,8 @@ namespace Hexagonal
         private float pixelHeight;
 
         private List<int> fieldHelper;
-        private DiceLabels diceLabels;
         private Dictionary<Color, Player> _playersByColor;
+        private int nonWaterFields;
 
         /// <param name="width">Board width</param>
         /// <param name="height">Board height</param>
@@ -49,6 +49,7 @@ namespace Hexagonal
         {
             this.width = width;
             this.height = height;
+            this.nonWaterFields = width * height;
             this.side = side;
             this.transferObject = dataTransfer;
 
@@ -58,7 +59,6 @@ namespace Hexagonal
             this.players = players;
             hexes = new Hex[height, width]; //opposite of what we'd expect
 
-            diceLabels = DiceLabels.GetInstance();
             textPosX = new int[height, width]; // MaHa
             textPosY = new int[height, width]; // MaHa
 
@@ -108,8 +108,6 @@ namespace Hexagonal
                 for (int j = 0; j < width; j++)
                 {
                     Player player = getPlayerByID(fieldHelper[f]);
-                    player.addField();
-                    player.Dices += 1;
 
                     bool isBorderWater = i == 0 || j == 0 || i == height - 1 || j == width - 1;
                     isBorderWater &= RandomGenerator.getInstance().rollTheDice(1) < 3;
@@ -119,9 +117,14 @@ namespace Hexagonal
 
                     bool isWater = isBorderWater || isInnerWater;
                     Hex current = new Hex(side, isWater ? Hex.WaterColor : player.Color, j, i, isWater ? 0 : 1, isWater);
-                    if (!isWater)
+
+                    if (isWater)
                     {
-                        current.Attach(DiceLabels.GetInstance());
+                        nonWaterFields--;
+                    }
+                    else
+                    {
+                        player.addField();
                     }
 
                     f++;
@@ -248,7 +251,8 @@ namespace Hexagonal
             foreach (Player player in players)
             {
                 int largestPatch = FindLargesPatchForPlayer(player);
-                this.distributeDices(player, (width * height) - largestPatch + MAX_DICE);
+                this.distributeDices(player, (int)((nonWaterFields) * 0.2 - largestPatch + MAX_DICE));
+                player.Reward = largestPatch;
             }
 
             foreach (Player player in players)
@@ -400,14 +404,14 @@ namespace Hexagonal
             }
         }
 
-        public bool HasWon(Player player) => player.Fields == this.Width * this.Height;
+        public bool HasWon(Player player) => player.Fields == nonWaterFields;
 
         /// <summary>
         /// This function is triggered, when an player attacks another player
         /// </summary>
         /// <param name="attacker">the hex field where the attack has started</param>
         /// <param name="defender">the desination where the attack leads to</param>
-        public bool PerformAttack(Hex attacker, Hex defender)
+        public (bool, int, int) PerformAttack(Hex attacker, Hex defender)
         {
             if (!this.CanAttack(attacker, defender, out string reason))
             {
@@ -419,28 +423,28 @@ namespace Hexagonal
             int attackerEyes = RandomGenerator.getInstance().rollTheDice(attacker.Dices);
             int defenderEyes = RandomGenerator.getInstance().rollTheDice(defender.Dices);
 
-            //
-            diceLabels.changeGameLabel(attackerP.Color, defenderP.Color, attackerEyes, defenderEyes);
-            //
-
             if (attackerEyes > defenderEyes)
             {
                 // Attacked wins
                 defender.HexState.BackgroundColor = attacker.HexState.BackgroundColor;
-                defenderP.Dices += ((defender.Dices) * -1);
                 defender.Dices = attacker.Dices - 1;
                 attacker.Dices = 1;
                 attackerP.Fields += 1;
                 defenderP.Fields -= 1;
                 this.BoardState.ActiveHex = defender;
-                return true;
+
+                attackerP.Reward = FindLargesPatchForPlayer(attackerP);
+                defenderP.Reward = FindLargesPatchForPlayer(defenderP);
+                return (true, attackerEyes, defenderEyes);
             }
             else
             {
                 // Defender wins
-                attackerP.Dices += ((attacker.Dices - 1) * -1);
                 attacker.Dices = 1;
-                return false;
+
+                attackerP.Reward = FindLargesPatchForPlayer(attackerP);
+                defenderP.Reward = FindLargesPatchForPlayer(defenderP);
+                return (false, attackerEyes, defenderEyes);
             }
         }
 
@@ -455,18 +459,20 @@ namespace Hexagonal
             List<Hex> fields = GetFieldsForPlayer(player);
             while (fields.Count > 0)
             {
-                List<Hex> patch = getPatch((Hex)fields[0], new List<Hex>());
+                HashSet<Hex> patch = getPatch((Hex)fields[0], new HashSet<Hex>());
+                
                 //test if larger
                 if (largestField < patch.Count)
                 {
                     largestField = patch.Count;
                 }
+
                 //strike out visited
                 foreach (Hex patchHex in patch)
                 {
                     foreach (Hex hex in fields)
                     {
-                        if (hex.Equals(patchHex))
+                        if (hex == patchHex)
                         {
                             //already visited
                             fields.Remove(patchHex);
@@ -475,6 +481,7 @@ namespace Hexagonal
                     }
                 }
             }
+
             return largestField;
         }
 
@@ -484,9 +491,9 @@ namespace Hexagonal
         /// <param name="hex">the starting hex</param>
         /// <param name="visited">for recursion, first call must be an empty arraylist</param>
         /// <returns>List of hexes that are connected containing the start hex</returns>
-        public List<Hex> GetPatch(Hex hex)
+        public HashSet<Hex> GetPatch(Hex hex)
         {
-            return this.getPatch(hex, new List<Hex>());
+            return this.getPatch(hex, new HashSet<Hex>());
         }
 
         /// <summary>
@@ -509,7 +516,7 @@ namespace Hexagonal
                     }
                 }
             }
-            return fields;
+            return fields.OrderByDescending(x => x.Dices).ToList();
         }
 
         /// <summary>
@@ -543,9 +550,13 @@ namespace Hexagonal
         {
             reason = null;
 
-            if (attacker.HexState.BackgroundColor != this.getCurrentPlayerColor())
+            if (attacker == null || defender == null)
             {
-                reason = "The target attacker hex does not belong to the current player!";
+                reason = "Nulls not allowed";
+            }
+            else if (attacker.HexState.BackgroundColor != this.getCurrentPlayerColor())
+            {
+                reason = "The attacker hex does not belong to the current player!";
             }
             else if (attacker.Dices <= 1 || attacker.Exhausted)
             {
@@ -654,13 +665,13 @@ namespace Hexagonal
             foreach (RelativeDirection direction in _allDirections)
             {
                 Hex neighbor = this.GetNeighborOrNull(hex, direction);
-                if (neighbor.HexState.BackgroundColor == color)
+                if (neighbor != null && neighbor.HexState.BackgroundColor == color)
                 {
                     results.Add((neighbor, direction));
                 }
             }
 
-            return results;
+            return results.OrderByDescending(x => x.Item1.Dices).ToList();
         }
 
         public List<(Hex, RelativeDirection)> GetNeighborsOfDifferentColor(Color color, Hex hex)
@@ -669,13 +680,13 @@ namespace Hexagonal
             foreach (RelativeDirection direction in _allDirections)
             {
                 Hex neighbor = this.GetNeighborOrNull(hex, direction);
-                if (neighbor.HexState.BackgroundColor != color)
+                if (neighbor != null && neighbor.HexState.BackgroundColor != color)
                 {
                     results.Add((neighbor, direction));
                 }
             }
 
-            return results;
+            return results.OrderByDescending(x => x.Item1.Dices).ToList();
         }
 
         /// <summary>
@@ -684,41 +695,18 @@ namespace Hexagonal
         /// <param name="hex">the starting hex</param>
         /// <param name="visited">for recursion, first call must be an empty arraylist</param>
         /// <returns>List of hexes that are connected containing the start hex</returns>
-        internal List<Hex> getPatch(Hex hex, List<Hex> visited)
+        internal HashSet<Hex> getPatch(Hex hex, HashSet<Hex> visited)
         {
             visited.Add(hex);
-            for (int x = -1; x <= 1; x++)
+            List<Hex> neighbors = GetNeighborsOfColor(hex.HexState.BackgroundColor, hex).Select(x => x.Item1).ToList();
+            foreach(Hex n in neighbors)
             {
-                int yStart = -1;
-                int yEnd = 1;
-                if (hex.GridPositionY % 2 == 0)
+                if (visited.Add(n))
                 {
-                    if (x == 1)
-                    {
-                        yStart = 0;
-                        yEnd = 0;
-                    }
-                }
-                else
-                {
-                    if (x == -1)
-                    {
-                        yStart = 0;
-                        yEnd = 0;
-                    }
-                }
-                for (int y = yStart; y <= yEnd; y++)
-                {
-                    if (!(x == 0 && y == 0) && !(hex.GridPositionX + x < 0 || hex.GridPositionX + x >= this.width || hex.GridPositionY + y < 0 || hex.GridPositionY + y >= this.height))
-                    {
-                        Hex neighbor = this.Hexes[(hex.GridPositionY + y), (hex.GridPositionX + x)];
-                        if (neighbor.HexState.BackgroundColor == hex.HexState.BackgroundColor && !visited.Contains(neighbor))
-                        {
-                            visited = getPatch(neighbor, visited);
-                        }
-                    }
+                    getPatch(n, visited);
                 }
             }
+            
             return visited;
         }
 
@@ -742,7 +730,7 @@ namespace Hexagonal
             {
                 if (player.Fields > 0)
                 {
-                    status += $"{player.PlayerLogic.GetType().Name}({player.Color.Name}): {player.Fields}({player.Dices})\r\n";
+                    status += $"{player.PlayerLogic.GetType().Name}({player.Color.Name}): {player.Fields}({player.Reward})\r\n";
                 }
             }
             return status;
@@ -821,6 +809,7 @@ namespace Hexagonal
 
             BoardState.ActivePlayer = nextActivePlayer(currentPlayer.ID);
             this.BoardState.ActiveHex = null;
+            currentPlayer = this.getPlayerByID(this.BoardState.ActivePlayer);
 
             if (currentPlayer.PlayerLogic is UserPlayer)
             {
@@ -850,7 +839,6 @@ namespace Hexagonal
             if (from == null || !from.IsNeighbor(to) || from.Exhausted)
             {
                 Console.WriteLine("Move of units not possible");
-                diceLabels.changeGameLabel(to.HexState.BackgroundColor, "Can't move");
                 return false;
             }
             if (from.Dices > 2)
@@ -865,7 +853,6 @@ namespace Hexagonal
                 to.Dices += transfer;
                 to.Exhausted = true;
 
-                diceLabels.changeGameLabel(from.HexState.BackgroundColor, "Dices moved");
                 return false;
             }
             return true;
@@ -912,14 +899,12 @@ namespace Hexagonal
         private void distributeDices(Player player, int dice)
         {
             List<Hex> fields = GetFieldsForPlayer(player);
-            dice += player.Bank;
 
             while (fields.Count > 0 && dice > 0)
             {
                 Hex randomHex = (Hex)fields[RANDOM.Next(fields.Count)];
                 if (randomHex.Dices < MAX_DICE)
                 {
-                    player.Dices += 1;
                     randomHex.Dices += 1;
                     dice -= 1;
                 }
@@ -927,11 +912,6 @@ namespace Hexagonal
                 {
                     fields.Remove(randomHex);
                 }
-            }
-            if (dice > 0)
-            {
-                player.Dices += dice;
-                player.Bank = dice;
             }
         }
 

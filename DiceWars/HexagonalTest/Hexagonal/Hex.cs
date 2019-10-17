@@ -2,7 +2,7 @@ using System.Drawing;
 
 namespace Hexagonal
 {
-    public class Hex : Subject
+    public class Hex
     {
         public static readonly Color WaterColor = Color.White;
         private System.Drawing.PointF[] points;
@@ -25,7 +25,6 @@ namespace Hexagonal
         private int dices;
 
         private bool exhausted;
-        private DiceLabels diceLabels;
 
         /// <summary>
         /// Constructor to initalize the Hexagon with the fixed values
@@ -57,7 +56,6 @@ namespace Hexagonal
             internal set
             {
                 dices = value;
-                this.Notify();
             }
         }
 

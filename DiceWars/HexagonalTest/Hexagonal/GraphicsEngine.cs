@@ -56,6 +56,10 @@ namespace Hexagonal
             //
             Bitmap bitmap = new Bitmap(width, height);
             Graphics bitmapGraphics = Graphics.FromImage(bitmap);
+            bitmapGraphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            bitmapGraphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.High;
+            bitmapGraphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+
             Pen p = new Pen(Color.Gray);
 
             //
@@ -64,15 +68,26 @@ namespace Hexagonal
             SolidBrush sb = new SolidBrush(board.BoardState.BackgroundColor);
             bitmapGraphics.FillRectangle(sb, 0, 0, width, height);
 
+            SolidBrush textBrush = new SolidBrush(Color.Black);
+
             //
             // Draw Hex Background
             //
-            for (int i = 0; i < board.Hexes.GetLength(0); i++)
+            using (Font font = new Font("Consolas", 12, FontStyle.Bold))
             {
-                for (int j = 0; j < board.Hexes.GetLength(1); j++)
+                for (int i = 0; i < board.Hexes.GetLength(0); i++)
                 {
-                    //bitmapGraphics.DrawPolygon(p, board.Hexes[i, j].Points);
-                    bitmapGraphics.FillPolygon(new SolidBrush(board.Hexes[i, j].HexState.BackgroundColor), board.Hexes[i, j].Points);
+                    for (int j = 0; j < board.Hexes.GetLength(1); j++)
+                    {
+                        //bitmapGraphics.DrawPolygon(p, board.Hexes[i, j].Points);
+                        Hex hex = board.Hexes[i, j];
+                        bitmapGraphics.FillPolygon(new SolidBrush(hex.HexState.BackgroundColor), hex.Points);
+
+                        if (!hex.IsWater)
+                        {
+                            bitmapGraphics.DrawString(hex.Dices.ToString(), font, textBrush, hex.Points[0]);
+                        }
+                    }
                 }
             }
 

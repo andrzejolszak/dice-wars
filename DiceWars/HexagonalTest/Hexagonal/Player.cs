@@ -7,16 +7,12 @@ namespace Hexagonal
     {
         private int id;
         private int fields;
-        private int dices;
-        private int bank;
         private Color color;
 
         public Player(int id, Color color, IPlayerLogic playerLogic)
         {
             this.id = id;
-            this.dices = 0;
             this.fields = 0;
-            this.bank = 0;
             this.color = color;
             this.PlayerLogic = playerLogic;
         }
@@ -57,30 +53,7 @@ namespace Hexagonal
             }
         }
 
-        public int Bank
-        {
-            get
-            {
-                return bank;
-            }
-            internal set
-            {
-                this.bank = value;
-            }
-        }
-
-        public int Dices
-        {
-            get
-            {
-                return dices;
-            }
-            internal set
-            {
-                this.dices = value;
-            }
-        }
-
+        public int Reward { get; internal set; }
         internal IPlayerLogic PlayerLogic { get; }
 
         internal void addField()

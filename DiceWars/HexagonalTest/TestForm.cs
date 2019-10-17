@@ -10,7 +10,6 @@ namespace HexagonalTest
         public DTOClass transferObject;
         private Board board;
         private GraphicsEngine graphicsEngine;
-        private Label[,] labels;
         private int sizeOfField;
 
         public Fight(Board x, int size, DTOClass data)
@@ -35,35 +34,6 @@ namespace HexagonalTest
             const int POSY = 37;
 
             this.graphicsEngine = new GraphicsEngine(board, 20, 20);
-
-            labels = new Label[sizeOfField, sizeOfField]; // MaHa
-            // MaHa --
-            // Textboxen "zeichnen"
-            int[,] tmpX = board.TextPosX;
-            int[,] tmpY = board.TextPosY;
-
-            for (int i = 0; i < sizeOfField; i++)
-            {
-                for (int j = 0; j < sizeOfField; j++)
-                {
-                    if (!board.Hexes[i, j].IsWater)
-                    {
-                        labels[i, j] = new Label();
-                        labels[i, j].Text = board.Hexes[i, j].Dices.ToString();
-                        labels[i, j].BackColor = board.Hexes[i, j].HexState.BackgroundColor;
-                        labels[i, j].Size = new System.Drawing.Size(13, 15);
-                        labels[i, j].Location = new Point(tmpX[i, j] + POSX, tmpY[i, j] + POSY);
-                        labels[i, j].Click += new EventHandler(Lable_MouseClick);
-                        this.Controls.Add(labels[i, j]);
-                    }
-                }
-            }
-
-            DiceLabels dicLabels = DiceLabels.GetInstance();
-            dicLabels.addLabels(this.labels);
-
-            dicLabels.addGameLabels(this.labelAttacker, this.labelDefender, this.labelAttackerDices, this.labelDefenderDices);
-            // -- End
         }
 
         private void Form_MouseClick(object sender, MouseEventArgs e)
@@ -98,13 +68,13 @@ namespace HexagonalTest
                         board.BoardState.ActiveHex = clickedHex;
                         labelAttacker.BackColor = board.getCurrentPlayerColor();
                         labelDefender.BackColor = Color.LightGray;
-
-                        labelDefenderDices.Text = "";
-                        labelAttackerDices.Text = "";
                     }
                     else if (board.CanAttack(board.BoardState.ActiveHex, clickedHex, out _))
                     {
-                        board.PerformAttack(board.BoardState.ActiveHex, clickedHex);
+                        var res = board.PerformAttack(board.BoardState.ActiveHex, clickedHex);
+
+                        labelAttackerDices.Text = res.Item2.ToString();
+                        labelDefenderDices.Text = res.Item3.ToString();
 
                         Player attackerP = board.findPlayerByColor(board.BoardState.ActiveHex.HexState.BackgroundColor);
                         if (board.HasWon(attackerP))
@@ -119,21 +89,6 @@ namespace HexagonalTest
             }
             //Update status lable
             lable_players.Text = this.board.getStatus();
-        }
-
-        /// <summary>
-        /// Proxy to trigger from an lable click the Form click event
-        /// </summary>
-        /// <param name="sender">An Lable</param>
-        /// <param name="e">position event</param>
-        private void Lable_MouseClick(object sender, EventArgs e)
-        {
-            if (e is MouseEventArgs && sender is Label)
-            {
-                //whats wrong with carsten?
-                MouseEventArgs newEvent = new MouseEventArgs(((MouseEventArgs)e).Button, ((MouseEventArgs)e).Clicks, ((Label)sender).Bounds.X, ((Label)sender).Bounds.Y, ((MouseEventArgs)e).Delta);
-                Form_MouseClick(sender, newEvent);
-            }
         }
 
         private void Form_Paint(object sender, PaintEventArgs e)

@@ -30,9 +30,9 @@ namespace HexagonalTest.Players
                 {
                     // 0.33 - 6.0
                     double diceRelation = ((double)own.Dices) / other.Dices;
-                    if (this._random.NextDouble() * 0.5 + diceRelation > 1.2d && boardState.CanAttack(own, other, out _))
+                    if ((this._random.NextDouble() * 0.5 + diceRelation > 1.2d || own.Dices == 8) && boardState.CanAttack(own, other, out _))
                     {
-                        bool won = boardState.PerformAttack(own, other);
+                        bool won = boardState.PerformAttack(own, other).victory;
                         if (won)
                         {
                             // Restart the logic to also process the freshly conquered fields
