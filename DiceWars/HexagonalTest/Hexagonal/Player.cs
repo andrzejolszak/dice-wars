@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Drawing;
+﻿using System.Drawing;
+using HexagonalTest.PlayerAPI;
 
 namespace Hexagonal
 {
@@ -13,13 +11,14 @@ namespace Hexagonal
         private int bank;
         private Color color;
 
-        public Player(int id, Color color)
+        public Player(int id, Color color, IPlayerLogic playerLogic)
         {
             this.id = id;
             this.dices = 0;
             this.fields = 0;
             this.bank = 0;
             this.color = color;
+            this.PlayerLogic = playerLogic;
         }
 
         public int ID
@@ -28,7 +27,7 @@ namespace Hexagonal
             {
                 return id;
             }
-            set
+            internal set
             {
                 this.id = value;
             }
@@ -40,7 +39,7 @@ namespace Hexagonal
             {
                 return color;
             }
-            set
+            internal set
             {
                 this.color = value;
             }
@@ -52,7 +51,7 @@ namespace Hexagonal
             {
                 return fields;
             }
-            set
+            internal set
             {
                 this.fields = value;
             }
@@ -64,22 +63,9 @@ namespace Hexagonal
             {
                 return bank;
             }
-            set
+            internal set
             {
                 this.bank = value;
-            }
-        }
-
-        public void addField()
-        {
-            this.fields++;
-        }
-        
-        public void removeField()
-        {
-            if (fields > 0)
-            {
-                this.fields--;
             }
         }
 
@@ -89,12 +75,25 @@ namespace Hexagonal
             {
                 return dices;
             }
-            set
+            internal set
             {
                 this.dices = value;
             }
         }
+
+        internal IPlayerLogic PlayerLogic { get; }
+
+        internal void addField()
+        {
+            this.fields++;
+        }
+
+        internal void removeField()
+        {
+            if (fields > 0)
+            {
+                this.fields--;
+            }
+        }
     }
-
-
 }

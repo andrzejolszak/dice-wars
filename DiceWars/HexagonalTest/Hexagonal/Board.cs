@@ -1,176 +1,74 @@
 using System;
 using System.Collections.Generic;
-using System.Collections;
-using System.Text;
-using System.Windows.Forms;
 using System.Drawing;
+using System.Linq;
+using HexagonalTest.PlayerAPI;
+using HexagonalTest.Players;
 
 namespace Hexagonal
 {
-	/// <summary>
-	/// Represents a 2D hexagon board
-	/// </summary>
-	public class Board
-	{
-		private Hexagonal.Hex[,] hexes;
-		private int width;
-		private int height;
-		private int xOffset;
-		private int yOffset;
-		private int side;
-        private HexagonalTest.DTOClass transferObject;
-        private HexagonalTest.Fight fightForm;
-		private Hexagonal.HexOrientation orientation;
-		private System.Drawing.Color backgroundColor;
-		private Hexagonal.BoardState boardState;
-        private ArrayList players = new ArrayList();
-        private int[,] textPosX; // MaHa
-        private int[,] textPosY; // MaHa
-		
-        private float pixelWidth;
-		private float pixelHeight;
-
+    /// <summary>
+    /// Represents a 2D hexagon board
+    /// </summary>
+    public class Board : IBoardState
+    {
         private static readonly int MAX_DICE = 9;
         private static readonly Random RANDOM = new Random();
+        private static readonly RelativeDirection[] _allDirections = new[] { RelativeDirection.N, RelativeDirection.NE, RelativeDirection.SE, RelativeDirection.S, RelativeDirection.SW, RelativeDirection.NW };
+        private Hexagonal.Hex[,] hexes;
+        private int width;
+        private int height;
+        private int xOffset;
+        private int yOffset;
+        private int side;
+        private HexagonalTest.DTOClass transferObject;
+        private HexagonalTest.Fight fightForm;
+        private System.Drawing.Color backgroundColor;
+        private List<Player> players = new List<Player>();
+        private int[,] textPosX;
+        private Hexagonal.BoardState boardState;
+
+        // MaHa
+        private int[,] textPosY;
+
+        private float pixelWidth;
+
+        // MaHa
+        private float pixelHeight;
+
         private List<int> fieldHelper;
         private DiceLabels diceLabels;
-
-		#region Properties
-
-		public Hexagonal.Hex[,] Hexes
-		{
-			get
-			{
-				return hexes;
-			}
-			set
-			{
-			}
-		}
-
-		public float PixelWidth
-		{
-			get
-			{
-				return pixelWidth;
-			}
-			set
-			{
-			}
-		}
-
-		public float PixelHeight
-		{
-			get
-			{
-				return pixelHeight;
-			}
-			set
-			{
-			}
-		}
-
-		public int XOffset
-		{
-			get
-			{
-				return xOffset;
-			}
-			set
-			{
-			}
-		}
-
-		public int YOffset
-		{
-			get
-			{
-				return xOffset;
-			}
-			set
-			{
-			}
-		}
-
-		public int Width
-		{
-			get
-			{
-				return width;
-			}
-			set
-			{
-			}
-		}
-
-		public int Height
-		{
-			get
-			{
-				return height;
-			}
-			set
-			{
-			}
-		}
-
-		public System.Drawing.Color BackgroundColor
-		{
-			get
-			{
-				return backgroundColor;
-			}
-			set
-			{
-				backgroundColor = value;
-			}
-		}
-
-		public Hexagonal.BoardState BoardState
-		{
-			get
-			{
-				return boardState;
-			}
-			set
-			{
-				throw new System.NotImplementedException();
-			}
-		}
-
-		#endregion 
+        private Dictionary<Color, Player> _playersByColor;
 
         /// <param name="width">Board width</param>
         /// <param name="height">Board height</param>
         /// <param name="side">Hexagon side length</param>
-        /// <param name="orientation">Orientation of the hexagons</param>
         /// <param name="xOffset">X coordinate offset</param>
         /// <param name="yOffset">Y coordinate offset</param>
-        public Board(int width, int height, int side, Hexagonal.HexOrientation orientation, int xOffset, int yOffset, BoardState boardState, ArrayList players, HexagonalTest.DTOClass dataTransfer)
-		{                                                    
-			this.width = width;                              
-			this.height = height;                            
-			this.side = side;
+        public Board(int width, int height, int side, int xOffset, int yOffset, BoardState boardState, List<Player> players, HexagonalTest.DTOClass dataTransfer)
+        {
+            this.width = width;
+            this.height = height;
+            this.side = side;
             this.transferObject = dataTransfer;
-               
-			this.orientation = orientation;                  
-			this.xOffset = xOffset;
-			this.yOffset = yOffset;
+
+            this.xOffset = xOffset;
+            this.yOffset = yOffset;
             this.boardState = boardState;
             this.players = players;
-			hexes = new Hex[height, width]; //opposite of what we'd expect
+            hexes = new Hex[height, width]; //opposite of what we'd expect
 
-            diceLabels = DiceLabels.GetInstance() ;
+            diceLabels = DiceLabels.GetInstance();
             textPosX = new int[height, width]; // MaHa
             textPosY = new int[height, width]; // MaHa
 
-			float h = Hexagonal.Math.CalculateH(side); // short side
-			float r = Hexagonal.Math.CalculateR(side); // long side
+            float h = Hexagonal.Math.CalculateH(side); // short side
+            float r = Hexagonal.Math.CalculateR(side); // long side
 
             //Initalize, fill and shuffle field helper to give each player the same amount of fields on the start
-            this.fieldHelper = new List<int>(width*height);
+            this.fieldHelper = new List<int>(width * height);
             int f = 0;
-            while(f < fieldHelper.Capacity) 
+            while (f < fieldHelper.Capacity)
             {
                 for (int p = players.Count - 1; p >= 0 && f < fieldHelper.Capacity; p--)
                 {
@@ -179,347 +77,343 @@ namespace Hexagonal
                 }
             }
             Math.Shuffle<int>(fieldHelper);
-            
+
             //Preload some dice results
             RandomGenerator.getInstance().initialize();
 
-			//
-			// Calculate pixel info..remove?
-			// because of staggering, need to add an extra r/h
-			float hexWidth = 0;
-			float hexHeight = 0;
-			switch (orientation)
-			{
-				case HexOrientation.Flat:
-					hexWidth = side + h;
-					hexHeight = r + r;
-					this.pixelWidth = (width * hexWidth) + h;
-					this.pixelHeight = (height * hexHeight) + r;
-					break;
-				case HexOrientation.Pointy:
-					hexWidth = r + r;
-					hexHeight = side + h;
-					this.pixelWidth = (width * hexWidth) + r;
-					this.pixelHeight = (height * hexHeight) + h;
-					break;
-				default:
-					break;
-			}
+            //
+            // Calculate pixel info..remove?
+            // because of staggering, need to add an extra r/h
+            float hexWidth = 0;
+            float hexHeight = 0;
+            hexWidth = side + h;
+            hexHeight = r + r;
+            this.pixelWidth = (width * hexWidth) + h;
+            this.pixelHeight = (height * hexHeight) + r;
 
-
-			bool inTopRow = false;
-			bool inBottomRow = false;
-			bool inLeftColumn = false;
-			bool inRightColumn = false;
-			bool isTopLeft = false;
-			bool isTopRight = false;
-			bool isBotomLeft = false;
-			bool isBottomRight = false;
+            bool inTopRow = false;
+            bool inBottomRow = false;
+            bool inLeftColumn = false;
+            bool inRightColumn = false;
+            bool isTopLeft = false;
+            bool isTopRight = false;
+            bool isBotomLeft = false;
+            bool isBottomRight = false;
 
             // f = field number in 2D plane
             f = 0;
-			// i = y coordinate (rows), j = x coordinate (columns) of the hex tiles 2D plane
-			for (int i = 0; i < height; i++)
-			{
-				for (int j = 0; j < width; j++)
-				{
+            // i = y coordinate (rows), j = x coordinate (columns) of the hex tiles 2D plane
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
+                {
                     Player player = getPlayerByID(fieldHelper[f]);
                     player.addField();
                     player.Dices += 1;
-                    Hex current = new Hex(side, orientation, player.Color, j, i, 1);
-                    current.Attach(DiceLabels.GetInstance());
+
+                    bool isBorderWater = i == 0 || j == 0 || i == height - 1 || j == width - 1;
+                    isBorderWater &= RandomGenerator.getInstance().rollTheDice(1) < 3;
+
+                    bool isInnerWater = i > 1 && j > 1 && i < height - 2 && j < width - 2;
+                    isInnerWater &= RandomGenerator.getInstance().rollTheDice(1) == 1;
+
+                    bool isWater = isBorderWater || isInnerWater;
+                    Hex current = new Hex(side, isWater ? Hex.WaterColor : player.Color, j, i, isWater ? 0 : 1, isWater);
+                    if (!isWater)
+                    {
+                        current.Attach(DiceLabels.GetInstance());
+                    }
 
                     f++;
-					// Set position booleans
-					#region Position Booleans
-						if (i == 0)
-						{
-							inTopRow = true;
-						}
-						else
-						{
-							inTopRow = false;
-						}
+                    // Set position booleans
 
-						if (i == height - 1)
-						{
-							inBottomRow = true;
-						}
-						else
-						{
-							inBottomRow = false;
-						}
+                    #region Position Booleans
 
-						if (j == 0)
-						{
-							inLeftColumn = true;
-						}
-						else
-						{
-							inLeftColumn = false;
-						}
+                    if (i == 0)
+                    {
+                        inTopRow = true;
+                    }
+                    else
+                    {
+                        inTopRow = false;
+                    }
 
-						if (j == width - 1)
-						{
-							inRightColumn = true;
-						}
-						else
-						{
-							inRightColumn = false;
-						}
+                    if (i == height - 1)
+                    {
+                        inBottomRow = true;
+                    }
+                    else
+                    {
+                        inBottomRow = false;
+                    }
 
-						if (inTopRow && inLeftColumn)
-						{
-							isTopLeft = true;
-						}
-						else
-						{
-							isTopLeft = false;
-						}
+                    if (j == 0)
+                    {
+                        inLeftColumn = true;
+                    }
+                    else
+                    {
+                        inLeftColumn = false;
+                    }
 
-						if (inTopRow && inRightColumn)
-						{
-							isTopRight = true;
-						}
-						else
-						{
-							isTopRight = false;
-						}
+                    if (j == width - 1)
+                    {
+                        inRightColumn = true;
+                    }
+                    else
+                    {
+                        inRightColumn = false;
+                    }
 
-						if (inBottomRow && inLeftColumn)
-						{
-							isBotomLeft = true;
-						}
-						else
-						{
-							isBotomLeft = false;
-						}
+                    if (inTopRow && inLeftColumn)
+                    {
+                        isTopLeft = true;
+                    }
+                    else
+                    {
+                        isTopLeft = false;
+                    }
 
-						if (inBottomRow && inRightColumn)
-						{
-							isBottomRight = true;
-						}
-						else
-						{
-							isBottomRight = false;
-						}
-						#endregion
+                    if (inTopRow && inRightColumn)
+                    {
+                        isTopRight = true;
+                    }
+                    else
+                    {
+                        isTopRight = false;
+                    }
 
-					//
-					// Calculate Hex positions
-					//
-					if (isTopLeft)
-					{
-						//First hex
-						switch (orientation)
-						{ 
-							case HexOrientation.Flat:
-                                current.Initialize(0 + h + xOffset, 0 + yOffset);
-								hexes[0, 0] = current;
-								break;
-							case HexOrientation.Pointy:
-                                current.Initialize(0 + r + xOffset, 0 + yOffset);
-                                hexes[0, 0] = current;
+                    if (inBottomRow && inLeftColumn)
+                    {
+                        isBotomLeft = true;
+                    }
+                    else
+                    {
+                        isBotomLeft = false;
+                    }
 
-                                // MaHa
-                                textPosX[0, 0] = 0 + (int)r + xOffset;
-                                textPosY[0, 0] = 0 + yOffset;
+                    if (inBottomRow && inRightColumn)
+                    {
+                        isBottomRight = true;
+                    }
+                    else
+                    {
+                        isBottomRight = false;
+                    }
 
-								break;
-							default:
-								break;
-						}		
+                    #endregion
 
-					}
-					else
-					{
-						switch (orientation)
-						{
-							case HexOrientation.Flat:
-								if (inLeftColumn)
-								{
-									// Calculate from hex above
-                                    current.Initialize(hexes[i - 1, j].Points[(int)Hexagonal.FlatVertice.BottomLeft]);
-									hexes[i, j] = current;
-								}
-								else
-								{
-									// Calculate from Hex to the left and need to stagger the columns
-									if (j % 2 == 0)
-									{
-										// Calculate from Hex to left's Upper Right Vertice plus h and R offset 
-										float x = hexes[i, j - 1].Points[(int)Hexagonal.FlatVertice.UpperRight].X;
-										float y = hexes[i, j - 1].Points[(int)Hexagonal.FlatVertice.UpperRight].Y;
-										x += h;
-										y -= r;
-                                        current.Initialize(x, y);
-                                        hexes[i, j] = current;
-									}
-									else
-									{
-										// Calculate from Hex to left's Middle Right Vertice
-                                        current.Initialize(hexes[i, j - 1].Points[(int)Hexagonal.FlatVertice.MiddleRight]);
-                                        hexes[i, j] = current;
-									}
-								}
-								break;
-							case HexOrientation.Pointy:
-								if (inLeftColumn)
-								{
-									// Calculate from hex above and need to stagger the rows
-									if (i % 2 == 0)
-									{
-                                        current.Initialize(hexes[i - 1, j].Points[(int)Hexagonal.PointyVertice.BottomLeft]);
-                                        hexes[i, j] = current;
-                                        // MaHa
-                                        int tmpX = hexes[i, j].TmpX;
-                                        int tmpY = hexes[i, j].TmpY;
-                                        textPosX[i, j] = tmpX;
-                                        textPosY[i, j] = tmpY;
-									}
-									else
-									{
-                                        current.Initialize(hexes[i - 1, j].Points[(int)Hexagonal.PointyVertice.BottomRight]);
-                                        hexes[i, j] = current;
-                                        
-                                        // MaHa
-                                        int tmpX = hexes[i, j].TmpX;
-                                        int tmpY = hexes[i, j].TmpY;
-                                        textPosX[i, j] = tmpX;
-                                        textPosY[i, j] = tmpY;
-									}
-
-								}
-								else
-								{
-									// Calculate from Hex to the left
-									float x = hexes[i, j - 1].Points[(int)Hexagonal.PointyVertice.UpperRight].X;
-									float y = hexes[i, j - 1].Points[(int)Hexagonal.PointyVertice.UpperRight].Y;
-									x += r;
-									y -= h;
-                                    current.Initialize(x, y);
-                                    hexes[i, j] = current;	
-
-                                    // MaHa
-                                    textPosX[i, j] = (int)x;
-                                    textPosY[i, j] = (int)y;
-								}
-								break;
-							default:
-								break;
-						}
-
-
-					}
-
-
-				}
-			}
+                    //
+                    // Calculate Hex positions
+                    //
+                    if (isTopLeft)
+                    {
+                        //First hex
+                        current.Initialize(0 + h + xOffset, 0 + yOffset);
+                        hexes[0, 0] = current;
+                    }
+                    else
+                    {
+                        if (inLeftColumn)
+                        {
+                            // Calculate from hex above
+                            current.Initialize(hexes[i - 1, j].Points[(int)Hexagonal.FlatVertice.BottomLeft]);
+                            hexes[i, j] = current;
+                        }
+                        else
+                        {
+                            // Calculate from Hex to the left and need to stagger the columns
+                            if (j % 2 == 0)
+                            {
+                                // Calculate from Hex to left's Upper Right Vertice plus h and R offset
+                                float x = hexes[i, j - 1].Points[(int)Hexagonal.FlatVertice.UpperRight].X;
+                                float y = hexes[i, j - 1].Points[(int)Hexagonal.FlatVertice.UpperRight].Y;
+                                x += h;
+                                y -= r;
+                                current.Initialize(x, y);
+                                hexes[i, j] = current;
+                            }
+                            else
+                            {
+                                // Calculate from Hex to left's Middle Right Vertice
+                                current.Initialize(hexes[i, j - 1].Points[(int)Hexagonal.FlatVertice.MiddleRight]);
+                                hexes[i, j] = current;
+                            }
+                        }
+                    }
+                }
+            }
             //Give players extra dices at the start.
             //Each player gets total number of fields minus his largest patch plus MAX_DICE
             foreach (Player player in players)
             {
-                int largestPatch = findLargesPatchForPlayer(player);
-                this.distributeDices(player, (width*height) - largestPatch + MAX_DICE);
+                int largestPatch = FindLargesPatchForPlayer(player);
+                this.distributeDices(player, (width * height) - largestPatch + MAX_DICE);
             }
-            Console.WriteLine(getStatus());		
-		}
 
-        /// <summary>
-        /// Function to set the Active player to be the next player
-        /// </summary>
-        public void nextPlayer()
-        {
-            Player currentPlayer = this.getPlayerByID(this.boardState.ActivePlayer);
-            int largestPatch = findLargesPatchForPlayer(currentPlayer);
+            foreach (Player player in players)
+            {
+                player.PlayerLogic.Initialize(player, this);
+            }
 
-            this.distributeDices(currentPlayer, largestPatch);
-            Console.WriteLine("Dice to distribute: " + largestPatch);
-            Console.WriteLine("Current Bank " + currentPlayer.Bank);
-
-            boardState.ActivePlayer = nextActivePlayer(currentPlayer.ID);
+            this._playersByColor = players.ToDictionary(x => x.Color);
         }
 
-        /// <summary>
-        /// Select next player and test if he still has fields
-        /// Either return this player or select next one via recursion
-        /// </summary>
-        /// <param name="currentPlayerId">The current players id uses for recursion</param>
-        /// <returns>the next player who still has fields</returns>
-        private int nextActivePlayer(int currentPlayerId)
+        ///      N
+        ///     ----
+        /// NW /    \ NE
+        ///   /      \
+        ///   \      /
+        /// SW \____/ SE
+        ///      S
+        public enum RelativeDirection
         {
-            //next Player:
-            if (currentPlayerId + 1 >= players.Count)
+            NE,
+            SE,
+            NW,
+            SW,
+            N,
+            S
+        }
+
+        public List<((Color playerColor, int hexX, int hexY, int diceCount) attacker, (Color playerColor, int hexX, int hexY, int diceCount) defender, bool attackerWon)> AttackHistory { get; } = new List<((Color playerColor, int hexX, int hexY, int diceCount) attacker, (Color playerColor, int hexX, int hexY, int diceCount) defender, bool attackerWon)>();
+
+        #region Properties
+
+        public Hexagonal.Hex[,] Hexes
+        {
+            get
             {
-                currentPlayerId = 0;
+                return hexes;
             }
-            else
+            internal set
             {
-                currentPlayerId = currentPlayerId + 1;
-            }
-            //termination condition for recursion, prevents stack overflow.
-            if (currentPlayerId == boardState.ActivePlayer)
-            {
-                return boardState.ActivePlayer;
-            }
-            //test if player has fields or find next player recursive 
-            if (getPlayerByID(currentPlayerId).Fields > 0)
-            {
-                return currentPlayerId;
-            }
-            else
-            {
-                return nextActivePlayer(currentPlayerId);
             }
         }
 
-        /// <summary>
-        /// Function to move 2/3 of the units from an hex to anoter
-        /// From hex must be not null, not exhausted and neighbor of to
-        /// </summary>
-        /// <param name="from">Units to move from</param>
-        /// <param name="to">Units to move to</param>
-        public bool moveDices(Hex from, Hex to)
+        public float PixelWidth
         {
-            if (from == null || !from.IsNeighbor(to) || from.Exhausted)
+            get
             {
-                Console.WriteLine("Move of units not possible");
-                diceLabels.changeGameLabel(to.HexState.BackgroundColor, "Can't move");
-                return false;
+                return pixelWidth;
             }
-            if (from.Dices > 2)
+            set
             {
-                int modulo = from.Dices % 3;
-                int transfer = (int)((from.Dices - modulo) * (2.0/3.0));
-                if (to.Dices + transfer > MAX_DICE)
-                {
-                    transfer = MAX_DICE - to.Dices;
-                }
-                from.Dices -= transfer;
-                to.Dices += transfer;
-                to.Exhausted = true;
-
-                diceLabels.changeGameLabel(from.HexState.BackgroundColor, "Dices moved");
-                return false;
             }
-            return true;
         }
 
+        public float PixelHeight
+        {
+            get
+            {
+                return pixelHeight;
+            }
+            set
+            {
+            }
+        }
+
+        public int XOffset
+        {
+            get
+            {
+                return xOffset;
+            }
+            set
+            {
+            }
+        }
+
+        public int YOffset
+        {
+            get
+            {
+                return xOffset;
+            }
+            set
+            {
+            }
+        }
+
+        public int Width
+        {
+            get
+            {
+                return width;
+            }
+            set
+            {
+            }
+        }
+
+        public int Height
+        {
+            get
+            {
+                return height;
+            }
+            set
+            {
+            }
+        }
+
+        public System.Drawing.Color BackgroundColor
+        {
+            get
+            {
+                return backgroundColor;
+            }
+            set
+            {
+                backgroundColor = value;
+            }
+        }
+
+        public Hexagonal.BoardState BoardState
+        {
+            get
+            {
+                return this.boardState;
+            }
+            internal set
+            {
+                throw new System.NotImplementedException();
+            }
+        }
+
+        #endregion
+        public List<Player> Players => this.players;
+
+        internal int[,] TextPosX
+        {
+            get
+            {
+                return this.textPosX;
+            }
+        }
+
+        internal int[,] TextPosY
+        {
+            get
+            {
+                return this.textPosY;
+            }
+        }
+
+        public bool HasWon(Player player) => player.Fields == this.Width * this.Height;
 
         /// <summary>
         /// This function is triggered, when an player attacks another player
         /// </summary>
         /// <param name="attacker">the hex field where the attack has started</param>
         /// <param name="defender">the desination where the attack leads to</param>
-        public void performAttack(Hex attacker, Hex defender)
+        public bool PerformAttack(Hex attacker, Hex defender)
         {
-            Console.WriteLine("Attacker:" + attacker.Dices + " Defender:" + defender.Dices);
-            if (attacker.Dices <= 1 || attacker.Exhausted) 
+            if (!this.CanAttack(attacker, defender, out string reason))
             {
-                Console.WriteLine("Attack not possible");
-                diceLabels.changeGameLabel(attacker.HexState.BackgroundColor, "Not possibl");
-                return;
+                throw new InvalidOperationException("Wrong attack move: " + reason);
             }
+
             Player attackerP = findPlayerByColor(attacker.HexState.BackgroundColor);
             Player defenderP = findPlayerByColor(defender.HexState.BackgroundColor);
             int attackerEyes = RandomGenerator.getInstance().rollTheDice(attacker.Dices);
@@ -529,10 +423,9 @@ namespace Hexagonal
             diceLabels.changeGameLabel(attackerP.Color, defenderP.Color, attackerEyes, defenderEyes);
             //
 
-            Console.WriteLine("Attacker Eyes:" + attackerEyes + " Defender Eyes:" + defenderEyes);
-            if (attackerEyes > defenderEyes)//attackerEyes > defenderEyes
+            if (attackerEyes > defenderEyes)
             {
-                Console.WriteLine("Attacker won");
+                // Attacked wins
                 defender.HexState.BackgroundColor = attacker.HexState.BackgroundColor;
                 defenderP.Dices += ((defender.Dices) * -1);
                 defender.Dices = attacker.Dices - 1;
@@ -540,53 +433,15 @@ namespace Hexagonal
                 attackerP.Fields += 1;
                 defenderP.Fields -= 1;
                 this.BoardState.ActiveHex = defender;
-
+                return true;
             }
             else
             {
-                Console.WriteLine("Attacker lost");
+                // Defender wins
                 attackerP.Dices += ((attacker.Dices - 1) * -1);
                 attacker.Dices = 1;
+                return false;
             }
-
-            if (defenderP.Fields == 0)
-            {
-                //Triggered when player is defeated
-                Console.WriteLine(defenderP.Color.Name + " has been defeated.");
-            }
-            if (attackerP.Fields == this.width * this.height)
-            {
-                //Triggered if player has won
-                Console.WriteLine(attackerP.Color.Name + " has won.");
-                HexagonalTest.GameOver gameOverForm = new HexagonalTest.GameOver(attackerP.Color.Name, transferObject);
-                gameOverForm.Show();
-                
-                
-            }
-        }
-
-
-        /// <summary>
-        /// Get all fields as list for the player
-        /// </summary>
-        /// <param name="playerColor">The players color</param>
-        /// <returns>The fields</returns>
-        private ArrayList getFieldsForPlayer(Color playerColor)
-        {
-            ArrayList fields = new ArrayList();
-            for (int x = 0; x < this.height; x++)
-            {
-                for (int y = 0; y < this.width; y++)
-                {
-                    Hex field = this.Hexes[x, y];
-                    if (field.HexState.BackgroundColor == playerColor)
-                    {
-                        field.Exhausted = false; //reset exhausted state
-                        fields.Add(field);
-                    }
-                }
-            }
-            return fields;
         }
 
         /// <summary>
@@ -594,13 +449,13 @@ namespace Hexagonal
         /// </summary>
         /// <param name="player">The players</param>
         /// <returns>the size of the lagest patch</returns>
-        public int findLargesPatchForPlayer(Player player)
+        public int FindLargesPatchForPlayer(Player player)
         {
             int largestField = 0;
-            ArrayList fields = getFieldsForPlayer(player.Color);
+            List<Hex> fields = GetFieldsForPlayer(player);
             while (fields.Count > 0)
             {
-                ArrayList patch = getPatch((Hex)fields[0], new ArrayList());
+                List<Hex> patch = getPatch((Hex)fields[0], new List<Hex>());
                 //test if larger
                 if (largestField < patch.Count)
                 {
@@ -610,15 +465,14 @@ namespace Hexagonal
                 foreach (Hex patchHex in patch)
                 {
                     foreach (Hex hex in fields)
-                    { 
+                    {
                         if (hex.Equals(patchHex))
                         {
                             //already visited
                             fields.Remove(patchHex);
                             break;
-                            
                         }
-                     }
+                    }
                 }
             }
             return largestField;
@@ -630,7 +484,207 @@ namespace Hexagonal
         /// <param name="hex">the starting hex</param>
         /// <param name="visited">for recursion, first call must be an empty arraylist</param>
         /// <returns>List of hexes that are connected containing the start hex</returns>
-        public ArrayList getPatch(Hex hex, ArrayList visited)
+        public List<Hex> GetPatch(Hex hex)
+        {
+            return this.getPatch(hex, new List<Hex>());
+        }
+
+        /// <summary>
+        /// Get all fields as list for the player
+        /// </summary>
+        /// <param name="playerColor">The players color</param>
+        /// <returns>The fields</returns>
+        public List<Hex> GetFieldsForPlayer(Player player)
+        {
+            List<Hex> fields = new List<Hex>();
+            for (int x = 0; x < this.height; x++)
+            {
+                for (int y = 0; y < this.width; y++)
+                {
+                    Hex field = this.Hexes[x, y];
+                    if (field.HexState.BackgroundColor == player.Color)
+                    {
+                        field.Exhausted = false; //reset exhausted state
+                        fields.Add(field);
+                    }
+                }
+            }
+            return fields;
+        }
+
+        /// <summary>
+        /// Function to find a player by its color
+        /// </summary>
+        /// <param name="color">The color of the player</param>
+        /// <returns>The player object</returns>
+        public Player findPlayerByColor(Color color)
+        {
+            foreach (Player player in players)
+            {
+                if (player.Color == color)
+                {
+                    return player;
+                }
+            }
+            throw new ArgumentException("This should never have happend and I'm really sorry");
+        }
+
+        public Player FindOwnerPlayer(Hex hex)
+        {
+            return findPlayerByColor(hex.HexState.BackgroundColor);
+        }
+
+        public Player FindPlayer(Color color)
+        {
+            return this._playersByColor[color];
+        }
+
+        public bool CanAttack(Hex attacker, Hex defender, out string reason)
+        {
+            reason = null;
+
+            if (attacker.HexState.BackgroundColor != this.getCurrentPlayerColor())
+            {
+                reason = "The target attacker hex does not belong to the current player!";
+            }
+            else if (attacker.Dices <= 1 || attacker.Exhausted)
+            {
+                reason = "Attack with less than 2 dice not possible!";
+            }
+            else if (attacker.HexState.BackgroundColor == defender.HexState.BackgroundColor)
+            {
+                reason = "Attack to the same color not possible!";
+            }
+            else if (!attacker.IsNeighbor(defender))
+            {
+                reason = "Attack to a non-neighbor not possible!";
+            }
+            else if (defender.IsWater)
+            {
+                reason = "Attack to a water hex not possible!";
+            }
+
+            return reason == null;
+        }
+
+        public Hex GetNeighborOrNull(Hex hex, RelativeDirection neighborDirection)
+        {
+            int x = hex.GridPositionX, y = hex.GridPositionY;
+
+            if (hex.GridPositionY % 2 == 0)
+            {
+                switch (neighborDirection)
+                {
+                    case RelativeDirection.N:
+                        x -= 1;
+                        break;
+
+                    case RelativeDirection.S:
+                        x += 1;
+                        break;
+
+                    case RelativeDirection.NE:
+                        x -= 1;
+                        y += 1;
+                        break;
+
+                    case RelativeDirection.NW:
+                        x -= 1;
+                        y -= 1;
+                        break;
+
+                    case RelativeDirection.SE:
+                        y += 1;
+                        break;
+
+                    case RelativeDirection.SW:
+                        y -= 1;
+                        break;
+
+                    default:
+                        throw new InvalidOperationException("Unknown direction: " + neighborDirection);
+                }
+            }
+            else
+            {
+                switch (neighborDirection)
+                {
+                    case RelativeDirection.N:
+                        x -= 1;
+                        break;
+
+                    case RelativeDirection.S:
+                        x += 1;
+                        break;
+
+                    case RelativeDirection.NE:
+                        y += 1;
+                        break;
+
+                    case RelativeDirection.NW:
+                        y -= 1;
+                        break;
+
+                    case RelativeDirection.SE:
+                        x += 1;
+                        y += 1;
+                        break;
+
+                    case RelativeDirection.SW:
+                        x += 1;
+                        y -= 1;
+                        break;
+
+                    default:
+                        throw new InvalidOperationException("Unknown direction: " + neighborDirection);
+                }
+            }
+
+            if (x < 0 || y < 0 || x >= height || y >= width)
+            {
+                return null;
+            }
+
+            return Hexes[x, y];
+        }
+
+        public List<(Hex, RelativeDirection)> GetNeighborsOfColor(Color color, Hex hex)
+        {
+            List<(Hex, RelativeDirection)> results = new List<(Hex, RelativeDirection)>();
+            foreach (RelativeDirection direction in _allDirections)
+            {
+                Hex neighbor = this.GetNeighborOrNull(hex, direction);
+                if (neighbor.HexState.BackgroundColor == color)
+                {
+                    results.Add((neighbor, direction));
+                }
+            }
+
+            return results;
+        }
+
+        public List<(Hex, RelativeDirection)> GetNeighborsOfDifferentColor(Color color, Hex hex)
+        {
+            List<(Hex, RelativeDirection)> results = new List<(Hex, RelativeDirection)>();
+            foreach (RelativeDirection direction in _allDirections)
+            {
+                Hex neighbor = this.GetNeighborOrNull(hex, direction);
+                if (neighbor.HexState.BackgroundColor != color)
+                {
+                    results.Add((neighbor, direction));
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Function to get all connected hex fields
+        /// </summary>
+        /// <param name="hex">the starting hex</param>
+        /// <param name="visited">for recursion, first call must be an empty arraylist</param>
+        /// <returns>List of hexes that are connected containing the start hex</returns>
+        internal List<Hex> getPatch(Hex hex, List<Hex> visited)
         {
             visited.Add(hex);
             for (int x = -1; x <= 1; x++)
@@ -658,7 +712,7 @@ namespace Hexagonal
                     if (!(x == 0 && y == 0) && !(hex.GridPositionX + x < 0 || hex.GridPositionX + x >= this.width || hex.GridPositionY + y < 0 || hex.GridPositionY + y >= this.height))
                     {
                         Hex neighbor = this.Hexes[(hex.GridPositionY + y), (hex.GridPositionX + x)];
-                        if (neighbor.HexState.BackgroundColor == hex.HexState.BackgroundColor && !visited.Contains(neighbor)) 
+                        if (neighbor.HexState.BackgroundColor == hex.HexState.BackgroundColor && !visited.Contains(neighbor))
                         {
                             visited = getPatch(neighbor, visited);
                         }
@@ -669,19 +723,201 @@ namespace Hexagonal
         }
 
         /// <summary>
+        /// Function to get the color of the ActivePlayer
+        /// </summary>
+        /// <returns>A Color</returns>
+        internal Color getCurrentPlayerColor()
+        {
+            return ((Player)this.players[this.BoardState.ActivePlayer]).Color;
+        }
+
+        /// <summary>
+        /// Get the field distribution for every player as string
+        /// </summary>
+        /// <returns>A String</returns>
+        internal String getStatus()
+        {
+            string status = "";
+            foreach (Player player in players)
+            {
+                if (player.Fields > 0)
+                {
+                    status += $"{player.PlayerLogic.GetType().Name}({player.Color.Name}): {player.Fields}({player.Dices})\r\n";
+                }
+            }
+            return status;
+        }
+
+        internal bool PointInBoardRectangle(System.Drawing.Point point)
+        {
+            return PointInBoardRectangle(point.X, point.Y);
+        }
+
+        internal bool PointInBoardRectangle(int x, int y)
+        {
+            //
+            // Quick check to see if X,Y coordinate is even in the bounding rectangle of the board.
+            // Can produce a false positive because of the staggerring effect of hexes around the edge
+            // of the board, but can be used to rule out an x,y point.
+            //
+            int topLeftX = 0 + XOffset;
+            int topLeftY = 0 + yOffset;
+            float bottomRightX = topLeftX + pixelWidth;
+            float bottomRightY = topLeftY + PixelHeight;
+
+            if (x > topLeftX && x < bottomRightX && y > topLeftY && y < bottomRightY)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        internal Hex FindHexMouseClick(System.Drawing.Point point)
+        {
+            return FindHexMouseClick(point.X, point.Y);
+        }
+
+        internal Hex FindHexMouseClick(int x, int y)
+        {
+            Hex target = null;
+
+            if (PointInBoardRectangle(x, y))
+            {
+                for (int i = 0; i < hexes.GetLength(0); i++)
+                {
+                    for (int j = 0; j < hexes.GetLength(1); j++)
+                    {
+                        if (Math.InsidePolygon(hexes[i, j].Points, 6, new System.Drawing.PointF(x, y)))
+                        {
+                            target = hexes[i, j];
+                            break;
+                        }
+                    }
+
+                    if (target != null)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return target;
+        }
+
+        /// <summary>
+        /// Function to set the Active player to be the next player
+        /// </summary>
+        internal void nextPlayer()
+        {
+            Player currentPlayer = this.getPlayerByID(this.BoardState.ActivePlayer);
+
+            int largestPatch = FindLargesPatchForPlayer(currentPlayer);
+            this.distributeDices(currentPlayer, largestPatch);
+            // Console.WriteLine("Dice to distribute: " + largestPatch);
+            // Console.WriteLine("Current Bank " + currentPlayer.Bank);
+
+            BoardState.ActivePlayer = nextActivePlayer(currentPlayer.ID);
+            this.BoardState.ActiveHex = null;
+
+            if (currentPlayer.PlayerLogic is UserPlayer)
+            {
+                return;
+            }
+
+            currentPlayer.PlayerLogic.PlayTurn(this);
+            bool hasWon = this.HasWon(currentPlayer);
+            if (hasWon)
+            {
+                return;
+            }
+
+            this.nextPlayer();
+        }
+
+        /// <summary>
+        /// Function to move 2/3 of the units from an hex to anoter
+        /// From hex must be not null, not exhausted and neighbor of to
+        /// </summary>
+        /// <param name="from">Units to move from</param>
+        /// <param name="to">Units to move to</param>
+        internal bool moveDices(Hex from, Hex to)
+        {
+            throw new InvalidOperationException("Not supported in this version!");
+
+            if (from == null || !from.IsNeighbor(to) || from.Exhausted)
+            {
+                Console.WriteLine("Move of units not possible");
+                diceLabels.changeGameLabel(to.HexState.BackgroundColor, "Can't move");
+                return false;
+            }
+            if (from.Dices > 2)
+            {
+                int modulo = from.Dices % 3;
+                int transfer = (int)((from.Dices - modulo) * (2.0 / 3.0));
+                if (to.Dices + transfer > MAX_DICE)
+                {
+                    transfer = MAX_DICE - to.Dices;
+                }
+                from.Dices -= transfer;
+                to.Dices += transfer;
+                to.Exhausted = true;
+
+                diceLabels.changeGameLabel(from.HexState.BackgroundColor, "Dices moved");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Select next player and test if he still has fields
+        /// Either return this player or select next one via recursion
+        /// </summary>
+        /// <param name="currentPlayerId">The current players id uses for recursion</param>
+        /// <returns>the next player who still has fields</returns>
+        private int nextActivePlayer(int currentPlayerId)
+        {
+            //next Player:
+            if (currentPlayerId + 1 >= players.Count)
+            {
+                currentPlayerId = 0;
+            }
+            else
+            {
+                currentPlayerId = currentPlayerId + 1;
+            }
+            //termination condition for recursion, prevents stack overflow.
+            if (currentPlayerId == BoardState.ActivePlayer)
+            {
+                return BoardState.ActivePlayer;
+            }
+            //test if player has fields or find next player recursive
+            if (getPlayerByID(currentPlayerId).Fields > 0)
+            {
+                return currentPlayerId;
+            }
+            else
+            {
+                return nextActivePlayer(currentPlayerId);
+            }
+        }
+
+        /// <summary>
         /// Function to give the given player new dices
         /// </summary>
         /// <param name="player">The player</param>
         /// <param name="dice">number of dices</param>
         private void distributeDices(Player player, int dice)
         {
-            ArrayList fields = getFieldsForPlayer(player.Color);
+            List<Hex> fields = GetFieldsForPlayer(player);
             dice += player.Bank;
 
-            while(fields.Count > 0 && dice > 0)
+            while (fields.Count > 0 && dice > 0)
             {
                 Hex randomHex = (Hex)fields[RANDOM.Next(fields.Count)];
-                if (randomHex.Dices < MAX_DICE) 
+                if (randomHex.Dices < MAX_DICE)
                 {
                     player.Dices += 1;
                     randomHex.Dices += 1;
@@ -708,132 +944,5 @@ namespace Hexagonal
         {
             return (Player)this.players[id];
         }
-
-        /// <summary>
-        /// Function to get the color of the ActivePlayer
-        /// </summary>
-        /// <returns>A Color</returns>
-        public Color getCurrentPlayerColor()
-        {
-            return ((Player)this.players[this.boardState.ActivePlayer]).Color;
-        }
-
-        /// <summary>
-        /// Function to find a player by its color
-        /// </summary>
-        /// <param name="color">The color of the player</param>
-        /// <returns>The player object</returns>
-        private Player findPlayerByColor(Color color)
-        {
-            foreach (Player player in players)
-            {
-                if (player.Color == color)
-                {
-                    return player;
-                }
-            }
-            throw new ArgumentException("This should never have happend and I'm really sorry");
-        }
-
-        /// <summary>
-        /// Get the field distribution for every player as string
-        /// </summary>
-        /// <returns>A String</returns>
-        public String getStatus()
-        {
-            String status = "";
-            foreach (Player player in players)
-            {
-                if (player.Fields > 0)
-                {
-                    status += player.Color.Name + "=" + player.Fields + "(" + player.Dices + ")     ";
-                }
-            }
-            return status;
-        }
-
-		public bool PointInBoardRectangle(System.Drawing.Point point)
-		{
-			return PointInBoardRectangle(point.X,point.Y);
-		}
-
-
-		public bool PointInBoardRectangle(int x, int y)
-		{
-			//
-			// Quick check to see if X,Y coordinate is even in the bounding rectangle of the board.
-			// Can produce a false positive because of the staggerring effect of hexes around the edge
-			// of the board, but can be used to rule out an x,y point.
-			//
-			int topLeftX = 0 + XOffset;
-			int topLeftY = 0 + yOffset;
-			float bottomRightX = topLeftX + pixelWidth;
-			float bottomRightY = topLeftY + PixelHeight;
-
-
-			if (x > topLeftX && x < bottomRightX && y > topLeftY && y < bottomRightY)
-			{
-				return true;
-			}
-			else 
-			{
-				return false;
-			}
-
-		}
-
-		public Hex FindHexMouseClick(System.Drawing.Point point)
-		{
-			return FindHexMouseClick(point.X,point.Y);
-		}
-
-		public Hex FindHexMouseClick(int x, int y)
-		{
-			Hex target = null;
-
-			if (PointInBoardRectangle(x, y))
-			{
-				for (int i = 0; i < hexes.GetLength(0); i++)
-				{
-					for (int j = 0; j < hexes.GetLength(1); j++)
-					{
-						if (Math.InsidePolygon(hexes[i, j].Points, 6, new System.Drawing.PointF(x, y)))
-						{
-							target = hexes[i, j];
-							break;
-						}
-					}
-
-					if (target != null)
-					{
-						break;
-					}
-				}
-
-			}
-			
-			return target;
-			
-		}
-        public int[,] TextPosX 
-        {
-            get
-            {
-                return this.textPosX;
-            }
-        }
-
-        public int[,] TextPosY
-        {
-            get
-            {
-                return this.textPosY;
-            }
-        }
-	}
-
-
-    
-
-
+    }
 }

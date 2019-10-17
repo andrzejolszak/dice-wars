@@ -1,28 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Drawing;
-using System.Collections;
+using HexagonalTest.PlayerAPI;
+using HexagonalTest.Players;
 
 namespace Hexagonal
 {
-    class Builder
+    internal class Builder
     {
         public class BoardBuilder
         {
             //Required
             private int width;
+
             private int height;
             private int side;
             private HexagonalTest.DTOClass dataTransfer;
-   
+
             //Optional
-            private int player = 2;
-            private HexOrientation orientation = HexOrientation.Pointy;
+            private int? player = null;
+
+            private List<IPlayerLogic> playerLogics = null;
+
             private int xOffset = 0;
             private int yOffset = 0;
             private BoardState boardState = new BoardStateBuilder().build();
-
 
             public BoardBuilder withWidht(int width)
             {
@@ -64,9 +66,13 @@ namespace Hexagonal
                 return this;
             }
 
-            public BoardBuilder withOrientation(HexOrientation orientation)
+            public BoardBuilder withPlayerLogics(List<IPlayerLogic> playerLogics)
             {
-                this.orientation = orientation;
+                if (playerLogics.Count == 0)
+                {
+                    throw new ArgumentException("There must be more than 1 Player");
+                }
+                this.playerLogics = playerLogics;
                 return this;
             }
 
@@ -87,12 +93,12 @@ namespace Hexagonal
                 this.boardState = boardState;
                 return this;
             }
+
             public BoardBuilder withDataTransfer(HexagonalTest.DTOClass data)
             {
                 this.dataTransfer = data;
                 return this;
             }
-          
 
             public Board build()
             {
@@ -100,23 +106,35 @@ namespace Hexagonal
                 {
                     throw new ArgumentException("width, height and side must be set!");
                 }
-                ArrayList players = new ArrayList();
-                for (int i = 0; i < player; i++)
+                List<Player> players = new List<Player>();
+                if (playerLogics != null)
                 {
-                    players.Add(new Player(i, PlayerColors.colors[i]));
+                    for (int i = 0; i < playerLogics.Count; i++)
+                    {
+                        players.Add(new Player(i, PlayerColors.colors[i], playerLogics[i]));
+                    }
                 }
+                else
+                {
+                    player = player ?? 2;
+                    for (int i = 0; i < player; i++)
+                    {
+                        players.Add(new Player(i, PlayerColors.colors[i], new AlphaRandom()));
+                    }
+                }
+
                 this.boardState.ActivePlayer = 0;
-                return new Board(this.width, this.height, this.side, this.orientation, this.xOffset, this.yOffset, this.boardState, players, this.dataTransfer);
+                return new Board(this.width, this.height, this.side, this.xOffset, this.yOffset, this.boardState, players, this.dataTransfer);
             }
         }
 
         public class BoardStateBuilder
         {
             private System.Drawing.Color backgroundColor = Color.White;
-			private System.Drawing.Color gridColor = Color.Black;
-			private int gridPenWidth = 1;
-			private System.Drawing.Color activeHexBorderColor = Color.Blue;
-			private int activeHexBorderWidth = 1;
+            private System.Drawing.Color gridColor = Color.Gray;
+            private int gridPenWidth = 1;
+            private System.Drawing.Color activeHexBorderColor = Color.Black;
+            private int activeHexBorderWidth = 2;
 
             public BoardStateBuilder withBackgroundColour(Color backgroundColor)
             {
@@ -148,7 +166,7 @@ namespace Hexagonal
                 return this;
             }
 
-            public BoardState build ()
+            public BoardState build()
             {
                 return new BoardState(this.backgroundColor, this.gridColor, this.gridPenWidth, this.activeHexBorderColor, this.activeHexBorderWidth);
             }

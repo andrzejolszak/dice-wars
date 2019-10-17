@@ -1,28 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Net;
 using System.IO;
+using System.Net;
 
 namespace Hexagonal
 {
     public class RandomGenerator
     {
-        private static RandomGenerator instance;
-        private static readonly Random RANDOM = new Random();
+        private static readonly Random RANDOM = new Random(DateTime.UtcNow.Millisecond);
         private static readonly int CACHE_SIZE = 250;
+        private static RandomGenerator instance;
         private List<int> cache = new List<int>();
 
         private RandomGenerator()
         {
-
         }
 
         public static RandomGenerator getInstance()
         {
             if (instance == null)
             {
-                instance = new RandomGenerator(); 
+                instance = new RandomGenerator();
             }
             return instance;
         }
@@ -41,7 +39,6 @@ namespace Hexagonal
                 {
                     Console.WriteLine("Fetching new really random dice results");
                     cache = GetRandomInts(1, 6, CACHE_SIZE);
-
                 }
                 int result = 0;
                 for (int i = dices; i > 0; i--)
@@ -70,8 +67,7 @@ namespace Hexagonal
             }
         }
 
-
-        //Returns an array of random integers between two numbers, both inclusive        
+        //Returns an array of random integers between two numbers, both inclusive
         private List<int> GetRandomInts(int min, int max, int count)
         {
             //Build the url string to www.random.org
@@ -101,7 +97,6 @@ namespace Hexagonal
 
             throw new Exception("No internet connection!");
         }
-
 
         //Connects to URL to download data
         private string DownloadData(string url)

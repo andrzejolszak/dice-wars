@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Drawing;
+﻿using System.Drawing;
 
 namespace Hexagonal
 {
-    class PlayerColors
+    internal class PlayerColors
     {
-        public readonly static Color[] colors = {Color.Red, Color.CornflowerBlue, Color.Green, Color.Yellow, Color.Orange, Color.Violet, Color.SkyBlue, Color.White}; 
+        public readonly static Color[] colors = { Color.Salmon, Color.CornflowerBlue, Color.LimeGreen, Color.Gold, Color.Orange, Color.MediumOrchid, Color.SkyBlue, Color.Turquoise };
     }
 }

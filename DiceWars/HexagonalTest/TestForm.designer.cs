@@ -45,31 +45,31 @@ namespace HexagonalTest
                 case 5: sizeOfBoardx = 350;
                         sizeOfBoardy = 270;
                         dynamicPos = 270;
-                        labelBot = 240;    
+                        labelBot = 300;    
 
                     break;
                 case 8: sizeOfBoardx = 490;
                          sizeOfBoardy = 380;
                          dynamicPos = 415;
-                         labelBot = 350;
+                         labelBot = 400;
 
                     break;
                 case 11: sizeOfBoardx = 620;
                          sizeOfBoardy = 500;
                          dynamicPos = 540;
-                         labelBot = 470;
+                         labelBot = 500;
 
                     break;
                 case 14: sizeOfBoardx = 740;
                          sizeOfBoardy = 600;
                          dynamicPos = 665;
-                         labelBot = 570;
+                         labelBot = 600;
 
                     break;
                 case 18: sizeOfBoardx = 920;
                          sizeOfBoardy = 755;
                          dynamicPos = 835;
-                         labelBot = 725;
+                         labelBot = 805;
 
                     break;
                 default:
@@ -213,8 +213,8 @@ namespace HexagonalTest
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form_Closing);
             this.MinimizeBox = false;
             this.MaximizeBox = false;
-            this.MinimumSize = new System.Drawing.Size(sizeOfBoardx+20, sizeOfBoardy+40);
-            this.MaximumSize = new System.Drawing.Size(sizeOfBoardx+20, sizeOfBoardy+40);
+            this.MinimumSize = new System.Drawing.Size(sizeOfBoardx+20, sizeOfBoardy+200);
+            this.MaximumSize = new System.Drawing.Size(sizeOfBoardx+20, sizeOfBoardy+200);
 
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.Form_Paint);
             this.MouseClick += new System.Windows.Forms.MouseEventHandler(this.Form_MouseClick);

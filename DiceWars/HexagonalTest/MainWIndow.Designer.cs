@@ -39,7 +39,7 @@
             // 
             // buttonStart
             // 
-            this.buttonStart.Font = new System.Drawing.Font("Snap ITC", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonStart.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.buttonStart.Location = new System.Drawing.Point(462, 315);
             this.buttonStart.Name = "buttonStart";
             this.buttonStart.Size = new System.Drawing.Size(121, 37);
@@ -50,7 +50,7 @@
             // 
             // comboBoxPlayer
             // 
-            this.comboBoxPlayer.Font = new System.Drawing.Font("Snap ITC", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.comboBoxPlayer.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.comboBoxPlayer.FormattingEnabled = true;
             this.comboBoxPlayer.Items.AddRange(new object[] {
             "2 - Player",
@@ -59,7 +59,7 @@
             "5 - Player"});
             this.comboBoxPlayer.Location = new System.Drawing.Point(462, 238);
             this.comboBoxPlayer.Name = "comboBoxPlayer";
-            this.comboBoxPlayer.Size = new System.Drawing.Size(142, 25);
+            this.comboBoxPlayer.Size = new System.Drawing.Size(142, 24);
             this.comboBoxPlayer.TabIndex = 1;
             this.comboBoxPlayer.Text = "Select Player";
             this.comboBoxPlayer.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
@@ -78,17 +78,17 @@
             // 
             this.label1.AutoSize = true;
             this.label1.BackColor = System.Drawing.Color.Transparent;
-            this.label1.Font = new System.Drawing.Font("Snap ITC", 50F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 50F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label1.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
             this.label1.Location = new System.Drawing.Point(17, 103);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(393, 86);
+            this.label1.Size = new System.Drawing.Size(322, 76);
             this.label1.TabIndex = 5;
             this.label1.Text = "DiceWars";
             // 
             // comboBoxSize
             // 
-            this.comboBoxSize.Font = new System.Drawing.Font("Snap ITC", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.comboBoxSize.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.comboBoxSize.FormattingEnabled = true;
             this.comboBoxSize.Items.AddRange(new object[] {
             "very small",
@@ -98,7 +98,7 @@
             "very big"});
             this.comboBoxSize.Location = new System.Drawing.Point(462, 269);
             this.comboBoxSize.Name = "comboBoxSize";
-            this.comboBoxSize.Size = new System.Drawing.Size(142, 25);
+            this.comboBoxSize.Size = new System.Drawing.Size(142, 24);
             this.comboBoxSize.TabIndex = 5;
             this.comboBoxSize.Text = "Select Size";
             this.comboBoxSize.SelectedIndexChanged += new System.EventHandler(this.comboBoxSize_SelectedIndexChanged);
@@ -107,7 +107,7 @@
             // 
             // button1
             // 
-            this.button1.Font = new System.Drawing.Font("Snap ITC", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.button1.Location = new System.Drawing.Point(462, 13);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(121, 37);

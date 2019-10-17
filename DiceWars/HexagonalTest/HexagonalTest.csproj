@@ -10,12 +10,13 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>HexagonalTest</RootNamespace>
     <AssemblyName>HexagonalTest</AssemblyName>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
     <OldToolsVersion>2.0</OldToolsVersion>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -25,6 +26,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -33,6 +35,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -71,11 +74,17 @@
     <Compile Include="Hexagonal\FlatVertice.cs" />
     <Compile Include="Hexagonal\GraphicsEngine.cs" />
     <Compile Include="Hexagonal\Hex.cs" />
-    <Compile Include="Hexagonal\HexOrientation.cs" />
     <Compile Include="Hexagonal\HexState.cs" />
     <Compile Include="Hexagonal\Math.cs" />
     <Compile Include="Hexagonal\Player.cs" />
     <Compile Include="Hexagonal\PointyVertice.cs" />
+    <Compile Include="Players\UserPlayer.cs" />
+    <Compile Include="Players\DeepRandom.cs" />
+    <Compile Include="Players\QuantumRevenge.cs" />
+    <Compile Include="Players\AlphaRandom.cs" />
+    <Compile Include="Players\BlockchainPrepper.cs" />
+    <Compile Include="PlayerAPI\IBoardState.cs" />
+    <Compile Include="PlayerAPI\IPlayerLogic.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
@@ -125,6 +134,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="Resources\Unbenannt.png" />
   </ItemGroup>
   <ItemGroup>
@@ -133,6 +143,7 @@
   <ItemGroup>
     <None Include="Resources\winner.jpg" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
