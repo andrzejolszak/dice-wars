@@ -246,6 +246,9 @@ namespace Hexagonal
                     }
                 }
             }
+
+            this._playersByColor = players.ToDictionary(x => x.Color);
+
             //Give players extra dices at the start.
             //Each player gets total number of fields minus his largest patch plus MAX_DICE
             foreach (Player player in players)
@@ -254,13 +257,6 @@ namespace Hexagonal
                 this.distributeDices(player, (int)((nonWaterFields) * 0.2 - largestPatch + MAX_DICE));
                 player.Reward = largestPatch;
             }
-
-            foreach (Player player in players)
-            {
-                player.PlayerLogic.Initialize(player, this);
-            }
-
-            this._playersByColor = players.ToDictionary(x => x.Color);
         }
 
         ///      N
@@ -422,6 +418,11 @@ namespace Hexagonal
             Player defenderP = findPlayerByColor(defender.HexState.BackgroundColor);
             int attackerEyes = RandomGenerator.getInstance().rollTheDice(attacker.Dices);
             int defenderEyes = RandomGenerator.getInstance().rollTheDice(defender.Dices);
+
+            this.AttackHistory.Add((
+                (attackerP.Color, attacker.GridPositionX, attacker.GridPositionY, attacker.Dices),
+                (defenderP.Color, defender.GridPositionX, defender.GridPositionY, defender.Dices),
+                attackerEyes > defenderEyes));
 
             if (attackerEyes > defenderEyes)
             {
@@ -680,7 +681,7 @@ namespace Hexagonal
             foreach (RelativeDirection direction in _allDirections)
             {
                 Hex neighbor = this.GetNeighborOrNull(hex, direction);
-                if (neighbor != null && neighbor.HexState.BackgroundColor != color)
+                if (neighbor != null && !neighbor.IsWater && neighbor.HexState.BackgroundColor != color)
                 {
                     results.Add((neighbor, direction));
                 }
@@ -730,7 +731,7 @@ namespace Hexagonal
             {
                 if (player.Fields > 0)
                 {
-                    status += $"{player.PlayerLogic.GetType().Name}({player.Color.Name}): {player.Fields}({player.Reward})\r\n";
+                    status += $"{player.PlayerLogic.GetType().Name}({player.Color.Name}): {player.Reward}\r\n";
                 }
             }
             return status;

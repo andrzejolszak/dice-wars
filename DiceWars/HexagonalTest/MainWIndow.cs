@@ -48,7 +48,14 @@ namespace HexagonalTest
                     .witHeight(sizeOfBoard)
                     .withWidht(sizeOfBoard)
                     .withSide(25)
-                    .withPlayerLogics(new List<IPlayerLogic> { new UserPlayer(), new BlockchainPrepper(), new AlphaRandom(), new DeepRandom(), new QuantumRevenge() })
+                    .withPlayerLogics(new List<IPlayerLogic>
+                    {
+                        new UserPlayer(),
+                        new BlockchainPrepper(),
+                        new AlphaRandom(),
+                        new DeepRandom(),
+                        new QuantumRevenge()
+                    })
                     .withBoardState(state)
                     .withDataTransfer(transferObject)
                     .build();

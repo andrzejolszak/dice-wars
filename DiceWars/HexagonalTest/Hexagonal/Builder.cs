@@ -124,7 +124,34 @@ namespace Hexagonal
                 }
 
                 this.boardState.ActivePlayer = 0;
-                return new Board(this.width, this.height, this.side, this.xOffset, this.yOffset, this.boardState, players, this.dataTransfer);
+                Board board = null;
+
+                // Create a board and make sure there are no islands
+                while (true)
+                {
+                    board = new Board(this.width, this.height, this.side, this.xOffset, this.yOffset, this.boardState, players, this.dataTransfer);
+                    bool islands = false;
+                    foreach (Hex h in board.Hexes)
+                    {
+                        if (!h.IsWater && board.GetNeighborsOfDifferentColor(Hex.WaterColor, h).Count == 0)
+                        {
+                            islands = true;
+                            break;
+                        }
+                    }
+
+                    if (!islands)
+                    {
+                        break;
+                    }
+                }
+
+                foreach (Player player in players)
+                {
+                    player.PlayerLogic.Initialize(player, board);
+                }
+
+                return board;
             }
         }
 
